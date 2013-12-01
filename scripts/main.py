@@ -76,7 +76,7 @@ def main():
         exit_with_message("You need checkout `README.md` first.")
 
     if len(sys.argv) != 2:
-        exit_with_message("Usage: sudo hostie arg")
+        exit_with_message("Usage: sudo hostie [argv|reset]")
 
     if getpass.getuser() != "root": 
         exit_with_message(" Oops... Please run it as *root* user.")
