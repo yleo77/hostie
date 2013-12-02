@@ -16,15 +16,28 @@ Put your custom hosts file in this dir: `~/.config/hostie`, and remeber the file
     
 Before you use it , make sure it is executable.
 
-#### add your custom host file to `/etc/hosts`
+#### Add your custom host file to `/etc/hosts`
 
     # azure is your created host file name in `~/.config/hostie`
     $ sudo hostie azure 
 
-#### reset your hosts file.
+#### Reset your hosts file.
 
     # reset your hosts file to the original
     $ sudo hostie reset  
+
+#### Show your current config.
+
+    $ hostie show  
+
+#### List your hostie Profile in ~/.config/hostie.
+
+    $ hostie list          
+
+Maybe you could alias a command like this:
+
+    alias h="sudo _REPO_DIR_/hostie".
+
 
 ## TODO
 
