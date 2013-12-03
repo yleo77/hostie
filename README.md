@@ -10,15 +10,15 @@ Switch hosts by Using Command Line
 
 ### Setting
 
-Put your custom hosts file in this dir: `~/.config/hostie`, and remeber the filename.
+Put your custom hosts file in this dir: `_REPO_DIR_/profiles`, and remeber the filename. (Of course, `~/.config/hostie/` also works.)
     
 ### Usage
     
 Before you use it , make sure it is executable.
 
-#### Add your custom host file to `/etc/hosts`
+#### Add your custom host file to `/etc/hosts`.
 
-    # azure is your created host file name in `~/.config/hostie`
+    # azure is your created host file name in `_REPO_DIR_/profiles`
     $ sudo hostie azure 
 
 #### Reset your hosts file.
@@ -26,14 +26,18 @@ Before you use it , make sure it is executable.
     # reset your hosts file to the original
     $ sudo hostie reset  
 
-#### Show your current config.
+#### Show your current profile.
 
     $ hostie show  
 
-#### List your hostie Profile in ~/.config/hostie.
+#### List your hostie profiles.
 
     $ hostie list          
 
+#### Display infomation about profile
+
+    $ hostie info [profile]
+    
 Maybe you could alias a command like this:
 
     alias h="sudo _REPO_DIR_/hostie".
