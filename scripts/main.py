@@ -6,13 +6,14 @@ import os
 import subprocess
 from os import path
 
+from colorful import *
+
 hosts_file = "/etc/hosts"
 hostie_dirs = [
     path.expanduser(path.join("~", ".config/hostie")) + '/',
     sys.path[0] + "/profiles/"
 ]
 profiles = {}
-
 for file in os.listdir(hostie_dirs[0]):
     profiles[file] = hostie_dirs[0] + file
 
@@ -22,28 +23,28 @@ for file in os.listdir(hostie_dirs[1]):
 START_TOKEN = "################# added by hostie"
 END_TOKEN   = "################# end of hostie"
 
-def exit_with_message(message = ''):
+def exit_with_message(message = '', type = 'default'):
     if len(message) > 0:
-        print(message)
+        print(colorful(message, type))
     exit(0)
 
 def flush():
     try:
         os.system('killall -HUP mDNSResponder')
     except:
-        exit_with_message("You need Refresh DNS Cache")
+        exit_with_message("You need Refresh DNS Cache", 'warn')
 
 def write(profile):
     if privilege() == False:
-        exit_with_message("Oops... Please run it as *root* user.")    
+        exit_with_message("Oops... Please run it as *root* user.", "error")    
 
     if check(profile) == False:
-        exit_with_message( "Oops! Profile: \"" + profile + "\" Not Found...")
+        exit_with_message( "Oops... Profile: \"" + profile + "\" Not Found...", "warn")
 
     file = profiles[profile]
 
     if os.path.exists(file) == False:
-        exit_with_message( "Oops! \"" + file + "\" Not Found...")
+        exit_with_message( "Oops... \"" + file + "\" Not Found...", "warn")
 
     try:
         file = open(file)
@@ -55,21 +56,22 @@ def write(profile):
         for line in lines:
             hosts_file_handle.writelines(line)
 
-        hosts_file_handle.writelines("\n################# current profile: `" + profile + '`\n')
+        hosts_file_handle.writelines("\n################# current profile: \"" +
+                profile + "\"\n")
         hosts_file_handle.writelines(END_TOKEN + "\n")
 
         close(file)
         close(hosts_file_handle)
         flush()
         
-        exit_with_message( "`" + profile +"` Profile Added in /etc/hosts.")
+        exit_with_message( "\"" + profile +"\" Profile Added in /etc/hosts.", 'info')
     except Exception, e:
         exit_with_message("Error...") 
 
 def reset(type = False):
 
     if privilege() == False:
-        exit_with_message("Oops... Please run it as *root* user.")    
+        exit_with_message("Oops... Please run it as *root* user.", 'error')    
 
     hosts_file_handle = open(hosts_file, "r+")
     lines = hosts_file_handle.readlines()
@@ -97,7 +99,7 @@ def reset(type = False):
     else:
         hosts_file_handle.close()
         flush()
-        exit_with_message('Reset Successfully.')
+        exit_with_message("Reset Successfully.", "info")
 
 def close(file):
     file.close()
@@ -108,6 +110,7 @@ def show():
     lines = hosts_file_handle.readlines()
     startIndex = -1
     endIndex   = -1
+    log_type = 'default'
     
     for index, line in enumerate(lines):
         if line.strip() == START_TOKEN:
@@ -116,21 +119,28 @@ def show():
             endIndex = index
             break
 
-    message = ''.join(lines[startIndex:endIndex+1]) if startIndex > -1 else "No Profile in \"/etc/hosts\"."            
-    exit_with_message(message)    
+    if startIndex > -1:
+        message = ''.join(lines[startIndex:endIndex+1])
+    else:
+        message = "No Profile in " + hosts_file
+        log_type = 'info'
+
+    exit_with_message(message, log_type)
 
 def list():
 
-    message = []    
+    message = []
+    log_type = 'default' 
     if len(profiles) == 0:
         message.append("Currently No Profile Available")
+        log_type = 'info'
     else:
         for profile in profiles:
             message.append( "  " +profile )
         message.insert(0, "Available Profiles:")
 
     message = "\n".join(message)
-    exit_with_message(message)
+    exit_with_message(message, log_type)
 
 def check(profile = False):
 
@@ -141,6 +151,7 @@ def check(profile = False):
 
 def info(profile = False):
     message = []
+    log_type = 'default'
     if profile != False:
         if check(profile) != False:
             message.append("Profile: \"" + profile + "\"\n")
@@ -153,33 +164,38 @@ def info(profile = False):
             message.append("---------------------------------\n")
             message.append("Path: " + profiles[profile])
         else:
-            message.append("Oops! Profile: \"" + profile + "\" Not Found...")
+            message.append("Oops... Profile: \"" + profile + "\" Not Found...")
+            log_type = 'warn'
     else:
         message.append(str(len(profiles)) + " profile" + ("s" if len(profiles)>1 else ""))
+        log_type = 'info'
 
     message = ''.join(message) 
-    exit_with_message(message)
+    exit_with_message(message, log_type)
 
 def rm(profile = False):
 
     message = []
+    log_type = 'default'
     if check(profile):
         try:
             op = raw_input("Type Y to Remove \""+ profile +"\" Profile: ")
             if op == "Y" or op == "y":
                 os.remove(profiles[profile])
                 message.append('Remove Successfully!')
+                log_type = 'info'
         except KeyboardInterrupt:
             message.append("")        
     else:
         message.append("Please Enter a valid profile")
+        log_type = 'warn'
 
     message = ''.join(message)
-    exit_with_message(message)
+    exit_with_message(message, log_type)
 
 def host():
     os.system('cat ' + hosts_file)
-    exit_with_message('')
+    exit_with_message()
 
 def privilege():
     return True if getpass.getuser() == "root" else False
@@ -187,16 +203,16 @@ def privilege():
 def help():
     message = ['Usage:']
     message.append('Require Root Privilege')
-    message.append('  sudo hostie [profile]\t\t# Quickly switch host')
-    message.append('  sudo hostie reset \t\t# Reset hostfile to the original\n')
+    message.append('  sudo hostie [profile]\t\t\t# Quickly switch host')
+    message.append('  sudo hostie reset \t\t\t# Reset hostfile to the original\n')
 
-    message.append('  hostie show \t\t# Show your current profile')
-    message.append('  hostie host \t\t# Show system host \n')
+    message.append('  hostie show \t\t\t\t# Show your current profile')
+    message.append('  hostie host \t\t\t\t# Show system host \n')
 
-    message.append('  hostie list \t\t# List your hostie profiles')
+    message.append('  hostie list \t\t\t\t# List your hostie profiles')
     message.append('  hostie info [profile] \t\t# Display infomation about profile')
-    message.append('  hostie rm [profile] \t\t# Remove one profile name\n')
-    message.append('See More in `README.md` about How to ...')
+    message.append('  hostie rm [profile] \t\t\t# Remove one profile \n')
+    message.append('See More in README.md about How to ...')
 
     exit_with_message('\n'.join(message))    
 
@@ -229,7 +245,7 @@ def main():
     }        
 
     if len(profiles) == 0:
-        print("Maybe You Need Create A Profile First.")     
+        print(colorful("Maybe You Need Create A Profile First.", 'warn'))
      
     if sys.argv[1] in fn_map:
         if len(sys.argv) > 2:
