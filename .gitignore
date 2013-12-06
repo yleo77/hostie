@@ -1,5 +1,8 @@
 # hostie profiles
-profiles/
+-profiles/*
+-!profiles/example
+
+#profiles/*
 
 *.py[cod]
 
