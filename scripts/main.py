@@ -3,6 +3,7 @@
 import sys
 import getpass
 import os
+import subprocess
 from os import path
 
 hosts_file = "/etc/hosts"
@@ -21,9 +22,10 @@ for file in os.listdir(hostie_dirs[1]):
 START_TOKEN = "################# added by hostie"
 END_TOKEN   = "################# end of hostie"
 
-def exit_with_message(message):
-    print(message)
-    exit(1)
+def exit_with_message(message = ''):
+    if len(message) > 0:
+        print(message)
+    exit(0)
 
 def flush():
     try:
@@ -32,8 +34,10 @@ def flush():
         exit_with_message("You need Refresh DNS Cache")
 
 def write(profile):
+    if privilege() == False:
+        exit_with_message("Oops... Please run it as *root* user.")    
 
-    if profiles.has_key(profile) == False:
+    if check(profile) == False:
         exit_with_message( "Oops! Profile: \"" + profile + "\" Not Found...")
 
     file = profiles[profile]
@@ -62,7 +66,11 @@ def write(profile):
     except Exception, e:
         exit_with_message("Error...") 
 
-def reset(type):
+def reset(type = False):
+
+    if privilege() == False:
+        exit_with_message("Oops... Please run it as *root* user.")    
+
     hosts_file_handle = open(hosts_file, "r+")
     lines = hosts_file_handle.readlines()
     startIndex = -1
@@ -124,12 +132,17 @@ def list():
     message = "\n".join(message)
     exit_with_message(message)
 
-def info(profile):
+def check(profile = False):
+
+    if profile != False:
+        return profiles.has_key(profile)
+    else:
+        return False
+
+def info(profile = False):
     message = []
     if profile != False:
-        if profiles.has_key(profile) == False:
-            message.append("Oops! Profile: \"" + profile + "\" Not Found...")
-        else:
+        if check(profile) != False:
             message.append("Profile: \"" + profile + "\"\n")
             message.append("---------------------------------\n")
             file = open(profiles[profile], "r")
@@ -139,39 +152,92 @@ def info(profile):
 
             message.append("---------------------------------\n")
             message.append("Path: " + profiles[profile])
+        else:
+            message.append("Oops! Profile: \"" + profile + "\" Not Found...")
     else:
         message.append(str(len(profiles)) + " profile" + ("s" if len(profiles)>1 else ""))
 
     message = ''.join(message) 
     exit_with_message(message)
 
+def rm(profile = False):
+
+    message = []
+    if check(profile):
+        try:
+            op = raw_input("Type Y to Remove \""+ profile +"\" Profile: ")
+            if op == "Y" or op == "y":
+                os.remove(profiles[profile])
+                message.append('Remove Successfully!')
+        except KeyboardInterrupt:
+            message.append("")        
+    else:
+        message.append("Please Enter a valid profile")
+
+    message = ''.join(message)
+    exit_with_message(message)
+
+def host():
+    os.system('cat ' + hosts_file)
+    exit_with_message('')
+
+def privilege():
+    return True if getpass.getuser() == "root" else False
+
+def help():
+    message = ['Usage:']
+    message.append('Require Root Privilege')
+    message.append('  sudo hostie [profile]\t\t# Quickly switch host')
+    message.append('  sudo hostie reset \t\t# Reset hostfile to the original\n')
+
+    message.append('  hostie show \t\t# Show your current profile')
+    message.append('  hostie host \t\t# Show system host \n')
+
+    message.append('  hostie list \t\t# List your hostie profiles')
+    message.append('  hostie info [profile] \t\t# Display infomation about profile')
+    message.append('  hostie rm [profile] \t\t# Remove one profile name\n')
+    message.append('See More in `README.md` about How to ...')
+
+    exit_with_message('\n'.join(message))    
+
 def main():
 
     if len(sys.argv) < 2:
-        exit_with_message("Usage: sudo hostie [profile|reset|show|list|info]\nSee More in `README.md` about How to ...")
+        help()
+
+    fn_map = {
+        '__default__': write,
+
+        'help': help,
+        
+        's': show,
+        'show': show,
+
+        'l': list,
+        'list': list,
+
+        'h': host,
+        'host': host,
+
+        'r': reset,
+        'reset': reset,
+        
+        'i': info,
+        'info': info,
+
+        'rm': rm
+    }        
 
     if len(profiles) == 0:
         print("Maybe You Need Create A Profile First.")     
-
-    if sys.argv[1] == 'show':
-        show()
-
-    elif sys.argv[1] == 'list': 
-        list()
-
-    elif sys.argv[1] == 'info':
+     
+    if sys.argv[1] in fn_map:
         if len(sys.argv) > 2:
-            info(sys.argv[2])
+            fn_map[sys.argv[1]](sys.argv[2])
         else:
-            info(False)
-
-    elif getpass.getuser() != "root": 
-        exit_with_message("Oops... Please run it as *root* user.")
-
-    if(sys.argv[1] == 'reset'):
-        reset(False)
+            fn_map[sys.argv[1]]()
     else:
-        write(sys.argv[1])
+        fn_map['__default__'](sys.argv[1])
 
 if __name__ == "__main__":
     main()
