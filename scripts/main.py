@@ -9,6 +9,7 @@ from os import path
 from colorful import *
 
 hosts_file = "/etc/hosts"
+
 hostie_dirs = [
     path.expanduser(path.join("~", ".config/hostie")) + '/',
     sys.path[0] + "/profiles/"
@@ -29,8 +30,9 @@ def exit_with_message(message = '', type = 'default'):
     exit(0)
 
 def flush():
+    
     try:
-        os.system('killall -HUP mDNSResponder')
+        subprocess.call('sudo killall -HUP mDNSResponder', shell=True)
     except:
         exit_with_message("You need Refresh DNS Cache", 'warn')
 
@@ -197,6 +199,24 @@ def host():
     os.system('cat ' + hosts_file)
     exit_with_message()
 
+def add(profile = False):
+
+    if profile == False or check(profile):
+        exit_with_message('profile name is null or already exist.', 'warn')
+    else:
+        subprocess.call(['vi', hostie_dirs[1] + profile])
+
+def edit(profile = False):
+
+    if profile != False:
+        if check(profile):
+            subprocess.call(['vi', profiles[profile]])
+        else:
+            exit_with_message( "Oops... Profile: \"" + profile + "\" Not Found...", "warn")
+    else:
+        subprocess.call(['vi', hosts_file])
+    exit_with_message()
+
 def privilege():
     return True if getpass.getuser() == "root" else False
 
@@ -210,8 +230,10 @@ def help():
     message.append('  hostie host \t\t\t\t# Show system host \n')
 
     message.append('  hostie list \t\t\t\t# List your hostie profiles')
+    message.append('  hostie add  [profile] \t\t# Add a profile to your profiles list')
     message.append('  hostie info [profile] \t\t# Display infomation about profile')
-    message.append('  hostie rm [profile] \t\t\t# Remove one profile \n')
+    message.append('  hostie edit [profile] \t\t# Edit ...')
+    message.append('  hostie rm   [profile] \t\t# Remove ...\n')
     message.append('See More in README.md about How to ...')
 
     exit_with_message('\n'.join(message))    
@@ -235,11 +257,18 @@ def main():
         'h': host,
         'host': host,
 
+        'e': edit,
+        'edit': edit,
+
+        'add': add,
+
         'r': reset,
         'reset': reset,
         
         'i': info,
         'info': info,
+
+        'flush': flush,
 
         'rm': rm
     }        
